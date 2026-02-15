@@ -6,10 +6,8 @@ import time
 
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.exceptions import BadRequest
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from datetime import datetime, time
+from datetime import datetime, time  # noqa: F811
 import pytz
-
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -17,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 muted_users = {}
 is_night_mode = False  # Флаг режима тишины
-TIMEZONE = pytz.timezone('Europe/Moscow')  # Замените на ваш часовой пояс
+TIMEZONE = pytz.timezone("Europe/Moscow")  # Замените на ваш часовой пояс
 
 bot = Bot(token=config.TOKEN)
 storage = MemoryStorage()
@@ -41,15 +39,18 @@ WELCOME_MESSAGE = """
 Приятного общения!
 """
 
+
 async def is_admin(user_id: int, chat_id: int):
     """Проверяет, является ли пользователь администратором чата."""
     member = await bot.get_chat_member(chat_id, user_id)
-    logging.info(f"User ID: {user_id}, Chat ID: {chat_id}, is admin: {member.is_chat_admin()}")
+    logging.info(
+        f"User ID: {user_id}, Chat ID: {chat_id}, is admin: {member.is_chat_admin()}"
+    )
     return member.is_chat_admin()
 
 
 # Команда БАН
-@dp.message_handler(content_types=['text'], commands=['ban'], commands_prefix="!/")
+@dp.message_handler(content_types=["text"], commands=["ban"], commands_prefix="!/")
 async def cmd_ban(message: types.Message):
     if not message.reply_to_message:
         await message.reply("Команда /ban <reply>")
@@ -59,10 +60,14 @@ async def cmd_ban(message: types.Message):
     if username:
         await message.reply_to_message.reply(f"Ничего личного, @{username}")
     else:
-        await message.reply_to_message.reply(f"Ничего личного")
+        await message.reply_to_message.reply("Ничего личного")
 
-    await message.bot.delete_message(chat_id=config.GROUP_ID, message_id=message.message_id)
-    await message.bot.kick_chat_member(chat_id=config.GROUP_ID, user_id=message.reply_to_message.from_user.id)
+    await message.bot.delete_message(
+        chat_id=config.GROUP_ID, message_id=message.message_id
+    )
+    await message.bot.kick_chat_member(
+        chat_id=config.GROUP_ID, user_id=message.reply_to_message.from_user.id
+    )
 
 
 # Команда Mute
@@ -77,7 +82,8 @@ async def get_user_id_by_username(chat_id, username):
         logging.error(f"Error getting user by username: {e}")
     return None
 
-@dp.message_handler(commands=['mute'], commands_prefix="!/")
+
+@dp.message_handler(commands=["mute"], commands_prefix="!/")
 async def mute_user(message: types.Message):
     if not await is_admin(message.from_user.id, message.chat.id):
         await message.reply("У вас нет прав для использования этой команды!")
@@ -101,11 +107,15 @@ async def mute_user(message: types.Message):
             time_str = args[1]
         else:
             if len(args) < 3:
-                await message.reply("Неверный формат команды. Используйте /mute <@username> <время>")
+                await message.reply(
+                    "Неверный формат команды. Используйте /mute <@username> <время>"
+                )
                 return
             try:
                 user_id_to_mute = int(args[1].replace("@", ""))
-                user_id_to_mute = (await bot.get_chat_member(message.chat.id, user_id_to_mute)).user.id
+                user_id_to_mute = (
+                    await bot.get_chat_member(message.chat.id, user_id_to_mute)
+                ).user.id
             except (ValueError, BadRequest):
                 await message.reply("Неверный формат пользователя. Укажите @username")
                 return
@@ -124,7 +134,7 @@ async def mute_user(message: types.Message):
         try:
             mute_time = int(time_str)
         except ValueError:
-            await message.reply('Неверный формат времени')
+            await message.reply("Неверный формат времени")
             return
         mute_duration = mute_time * time_multiplier
         until_date = int(time.time()) + mute_duration
@@ -141,15 +151,14 @@ async def mute_user(message: types.Message):
             types.ChatPermissions(can_send_messages=False),
             until_date=until_date,
         )
-        await message.reply(
-            f"Пользователь {user_info.user.full_name} был замучен!")
+        await message.reply(f"Пользователь {user_info.user.full_name} был замучен!")
 
     except BadRequest as e:
         logging.error(f"Ошибка при муте пользователя: {e}")
         await message.reply("Не удалось замутить пользователя. Проверьте права бота.")
 
 
-#Команда UnMute
+# Команда UnMute
 @dp.message_handler(commands=["unmute"], commands_prefix="!/")
 async def unmute_user(message: types.Message):
     if not await is_admin(message.from_user.id, message.chat.id):
@@ -172,9 +181,11 @@ async def unmute_user(message: types.Message):
             except ValueError:
                 user_id_to_unmute = int(user_id_to_unmute.replace("@", ""))
                 try:
-                    user_id_to_unmute = (await bot.get_chat_member(message.chat.id, user_id_to_unmute)).user.id
+                    user_id_to_unmute = (
+                        await bot.get_chat_member(message.chat.id, user_id_to_unmute)
+                    ).user.id
                 except BadRequest:
-                    await message.reply('Пользователь не найден')
+                    await message.reply("Пользователь не найден")
                     return
 
         user_info = await bot.get_chat_member(message.chat.id, user_id_to_unmute)
@@ -195,15 +206,17 @@ async def unmute_user(message: types.Message):
         await message.reply("Не удалось размутить пользователя. Проверьте права бота.")
 
 
-#Команда предупреждения и выговоров
-@dp.message_handler(commands=['warn'], commands_prefix="!/")
+# Команда предупреждения и выговоров
+@dp.message_handler(commands=["warn"], commands_prefix="!/")
 async def warn_user(message: types.Message):
     if not await is_admin(message.from_user.id, message.chat.id):
         await message.reply("У вас нет прав для использования этой команды!")
         return
 
     if not message.reply_to_message:
-        await message.reply("Используйте команду /warn как ответ на сообщение пользователя.")
+        await message.reply(
+            "Используйте команду /warn как ответ на сообщение пользователя."
+        )
         return
 
     warned_user_id = message.reply_to_message.from_user.id
@@ -224,19 +237,25 @@ async def warn_user(message: types.Message):
         user_strikes[warned_user_id] += 1
         user_warnings[warned_user_id] = 0
         if user_strikes[warned_user_id] >= 3:
-             await message.bot.kick_chat_member(chat_id=config.GROUP_ID, user_id=warned_user_id)
-             if warned_user_name:
-                await message.reply(f"Пользователь @{warned_user_name} получил 3 выговора и заблокирован!")
-             else:
-                  await message.reply(f"Пользователь {message.reply_to_message.from_user.full_name} получил 3 выговора и заблокирован!")
+            await message.bot.kick_chat_member(
+                chat_id=config.GROUP_ID, user_id=warned_user_id
+            )
+            if warned_user_name:
+                await message.reply(
+                    f"Пользователь @{warned_user_name} получил 3 выговора и заблокирован!"
+                )
+            else:
+                await message.reply(
+                    f"Пользователь {message.reply_to_message.from_user.full_name} получил 3 выговора и заблокирован!"
+                )
 
-             user_strikes[warned_user_id] = 0
-             return
+            user_strikes[warned_user_id] = 0
+            return
         else:
             if warned_user_name:
-                warn_message = f"Пользователь @{warned_user_name} получил выговор. Осталось {3 - user_strikes[warned_user_id] } выговора до бана!"
+                warn_message = f"Пользователь @{warned_user_name} получил выговор. Осталось {3 - user_strikes[warned_user_id]} выговора до бана!"
             else:
-                warn_message = f"Пользователь {message.reply_to_message.from_user.full_name} получил выговор. Осталось {3 - user_strikes[warned_user_id] } выговора до бана!"
+                warn_message = f"Пользователь {message.reply_to_message.from_user.full_name} получил выговор. Осталось {3 - user_strikes[warned_user_id]} выговора до бана!"
     else:
         if warned_user_name:
             warn_message = f"У пользователя @{warned_user_name} {user_warnings[warned_user_id]}/3 предупреждений."
@@ -245,7 +264,9 @@ async def warn_user(message: types.Message):
 
     # Создаем Inline кнопку для снятия предупреждения
     markup = InlineKeyboardMarkup()
-    remove_button = InlineKeyboardButton("Снять предупреждение", callback_data=f"remove_warn_{warned_user_id}")
+    remove_button = InlineKeyboardButton(
+        "Снять предупреждение", callback_data=f"remove_warn_{warned_user_id}"
+    )
     markup.add(remove_button)
 
     await message.reply(warn_message, reply_markup=markup)
@@ -264,68 +285,85 @@ async def remove_warning_callback(query: types.CallbackQuery):
 
         warned_user_info = await bot.get_chat_member(query.message.chat.id, user_id)
         if warned_user_info.user.username:
-             warn_message = f"У пользователя @{warned_user_info.user.username} {user_warnings[user_id]}/3 предупреждений."
+            warn_message = f"У пользователя @{warned_user_info.user.username} {user_warnings[user_id]}/3 предупреждений."
         else:
-             warn_message = f"У пользователя {warned_user_info.user.full_name} {user_warnings[user_id]}/3 предупреждений."
-
+            warn_message = f"У пользователя {warned_user_info.user.full_name} {user_warnings[user_id]}/3 предупреждений."
 
         # Обновляем сообщение, меняя текст и убирая кнопки
         await bot.edit_message_text(
-                chat_id = query.message.chat.id,
-                message_id=query.message.message_id,
-                text= warn_message,
-                reply_markup=None)
+            chat_id=query.message.chat.id,
+            message_id=query.message.message_id,
+            text=warn_message,
+            reply_markup=None,
+        )
     else:
-        await query.answer("У пользователя нет предупреждений, которые можно снять.", show_alert=True)
+        await query.answer(
+            "У пользователя нет предупреждений, которые можно снять.", show_alert=True
+        )
 
 
 # Команда для снятия выговора
-@dp.message_handler(commands=['remove_warn'], commands_prefix="!/")
+@dp.message_handler(commands=["remove_warn"], commands_prefix="!/")
 async def remove_strike(message: types.Message):
     if not await is_admin(message.from_user.id, message.chat.id):
         await message.reply("У вас нет прав для использования этой команды!")
         return
 
     if not message.reply_to_message:
-        await message.reply("Используйте команду /remove_strike как ответ на сообщение пользователя.")
+        await message.reply(
+            "Используйте команду /remove_strike как ответ на сообщение пользователя."
+        )
         return
 
     user_id_to_remove_strike = message.reply_to_message.from_user.id
     user_name = message.reply_to_message.from_user.username
-    if user_id_to_remove_strike in user_strikes and user_strikes[user_id_to_remove_strike] > 0:
+    if (
+        user_id_to_remove_strike in user_strikes
+        and user_strikes[user_id_to_remove_strike] > 0
+    ):
         user_strikes[user_id_to_remove_strike] -= 1
         if user_name:
-            await message.reply(f"Выговор пользователя @{user_name} снят. Осталось {user_strikes[user_id_to_remove_strike]} выговоров.")
+            await message.reply(
+                f"Выговор пользователя @{user_name} снят. Осталось {user_strikes[user_id_to_remove_strike]} выговоров."
+            )
         else:
-            await message.reply(f"Выговор пользователя {message.reply_to_message.from_user.full_name} снят. Осталось {user_strikes[user_id_to_remove_strike]} выговоров.")
+            await message.reply(
+                f"Выговор пользователя {message.reply_to_message.from_user.full_name} снят. Осталось {user_strikes[user_id_to_remove_strike]} выговоров."
+            )
 
     else:
-         if user_name:
-            await message.reply(f"У пользователя @{user_name} нет выговоров или они уже сняты.")
-         else:
-              await message.reply(f"У пользователя {message.reply_to_message.from_user.full_name} нет выговоров или они уже сняты.")
+        if user_name:
+            await message.reply(
+                f"У пользователя @{user_name} нет выговоров или они уже сняты."
+            )
+        else:
+            await message.reply(
+                f"У пользователя {message.reply_to_message.from_user.full_name} нет выговоров или они уже сняты."
+            )
 
 
 # АнтиМат
 def load_mat_words(file_path):
     mat = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 mat.append(line.strip().lower())
     except FileNotFoundError:
         print(f"Файл не найден: {file_path}")
     return mat
 
+
 def contains_stop_words(text, mat):
     if not text:
         return "*"
     text = text.lower()
     for word in mat:
-        text = re.sub(r'\b' + re.escape(word) + r'\b', '', text)
+        text = re.sub(r"\b" + re.escape(word) + r"\b", "", text)
     return text
 
-@dp.message_handler(content_types=['text'])
+
+@dp.message_handler(content_types=["text"])
 async def check_message(message: types.Message):
     global is_night_mode
     file_path = "MAT.txt"
@@ -333,14 +371,18 @@ async def check_message(message: types.Message):
 
     user_id = message.from_user.id
     chat_id = message.chat.id
-    logging.info(f"Message received from {user_id}, text: {message.text}, is_night_mode: {is_night_mode}")
+    logging.info(
+        f"Message received from {user_id}, text: {message.text}, is_night_mode: {is_night_mode}"
+    )
     is_user_admin = await is_admin(user_id, chat_id)
     logging.info(f"Is User Admin: {is_user_admin}")
     if is_night_mode and not is_user_admin:
-        logging.info(f"Deleting message from user {message.from_user.id} during night mode.")
+        logging.info(
+            f"Deleting message from user {message.from_user.id} during night mode."
+        )
         try:
             await message.delete()
-            logging.info(f"Message deleted.")
+            logging.info("Message deleted.")
             return
         except Exception as e:
             logging.error(f"Error deleting message: {e}")
@@ -352,13 +394,21 @@ async def check_message(message: types.Message):
             try:
                 await message.answer(cleaned_text)  # посылаем новое сообщение
                 await bot.delete_message(message.chat.id, message.message_id)
-                print(f"Сообщение с ID {message.message_id} изменено. Стоп-слова удалены.")
+                print(
+                    f"Сообщение с ID {message.message_id} изменено. Стоп-слова удалены."
+                )
             except Exception as e:
                 print(f"Ошибка: {e}")
-        elif not cleaned_text and cleaned_text != message.text.lower():  # Проверяем если cleaned_text пустой, но был текст.
+        elif (
+            not cleaned_text and cleaned_text != message.text.lower()
+        ):  # Проверяем если cleaned_text пустой, но был текст.
             try:
-                await bot.delete_message(message.chat.id, message.message_id)  # удаляем оригинальное сообщение
-                print(f"Сообщение с ID {message.message_id} удалено. Так как содержит только стоп слова")
+                await bot.delete_message(
+                    message.chat.id, message.message_id
+                )  # удаляем оригинальное сообщение
+                print(
+                    f"Сообщение с ID {message.message_id} удалено. Так как содержит только стоп слова"
+                )
             except Exception as e:
                 print(f"Ошибка: {e}")
         else:
@@ -366,13 +416,16 @@ async def check_message(message: types.Message):
     else:
         print(f"Сообщение с ID {message.message_id} не содержит текста.")
 
+
 # Приветствие новых пользователей
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def new_member_handler(message: types.Message):
     for new_member in message.new_chat_members:
         if new_member.id != bot.id:
             if new_member.username:
-                welcome_text = WELCOME_MESSAGE.format(new_user=f'@{new_member.username}')
+                welcome_text = WELCOME_MESSAGE.format(
+                    new_user=f"@{new_member.username}"
+                )
             else:
                 welcome_text = WELCOME_MESSAGE.format(new_user=new_member.full_name)
             await message.reply(welcome_text, parse_mode="HTML")
@@ -399,5 +452,5 @@ async def on_startup(dp):
     print(f"Текущее время на сервере: {datetime.now(TIMEZONE)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
